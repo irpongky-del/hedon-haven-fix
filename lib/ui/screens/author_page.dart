@@ -147,7 +147,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
             primaryText: "Close",
             onPrimary: () => Navigator.pop(context),
             content: SingleChildScrollView(
-                child: Image.network(authorPage?.avatar ?? "Avatar url is null",
+                child: Image.network(authorPage?.avatar ?? "",
                     errorBuilder: (context, error, stackTrace) {
               if (!error.toString().contains("mockAvatar")) {
                 logger.e("Failed to load network avatar: $error\n$stackTrace");
@@ -408,7 +408,7 @@ class _AuthorPageScreenState extends State<AuthorPageScreen> {
                   child: GestureDetector(
                       onTap: () => openAvatarInFullscreen(),
                       child: Image.network(
-                          authorPage?.avatar ?? "Avatar url is null",
+                          authorPage?.avatar ?? "",
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                         if (!error.toString().contains("mockAvatar")) {

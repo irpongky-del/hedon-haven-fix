@@ -98,9 +98,9 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
       videoSuggestions = loadingHandler.getVideoSuggestions(
           videoMetadata.plugin!, videoMetadata.iD, videoMetadata.rawHtml, null);
       // Pre-load images so they are immediately available when the skeletonizer stops
-      await precacheImage(
-          NetworkImage(videoMetadata.authorAvatar ?? "Avatar url is null"),
-          context);
+      if (videoMetadata.authorAvatar != null) {
+        await precacheImage(NetworkImage(videoMetadata.authorAvatar), context);
+      }
       setState(() {
         isLoadingMetadata = false;
       });
@@ -250,7 +250,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
             },
             content: SingleChildScrollView(
                 child: Image.network(
-                    comment.profilePicture ?? "Avatar url is null",
+                    comment.profilePicture ?? "",
                     errorBuilder: (context, error, stackTrace) {
               if (!error.toString().contains("mockAvatar")) {
                 logger.e("Failed to load network avatar: $error\n$stackTrace");

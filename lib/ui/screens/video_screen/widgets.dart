@@ -216,7 +216,7 @@ Widget buildActorWidget(BuildContext context, void Function() openContainer,
               child: Image.network(
                 width: 30,
                 height: 30,
-                actor.avatar ?? "Avatar url is null",
+                actor.avatar ?? "",
                 fit: BoxFit.cover,
                 errorBuilder: (context, e, st) {
                   if (!e.toString().contains("mockAvatar")) {
@@ -268,8 +268,7 @@ Widget buildAuthorWidget(BuildContext context, VideoPlayerScreenState vps) {
                         height: 50,
                         color: Theme.of(context).colorScheme.tertiary,
                         child: Image.network(
-                          vps.videoMetadata.authorAvatar ??
-                              "Avatar url is null",
+                          vps.videoMetadata.authorAvatar ?? "",
                           fit: BoxFit.cover,
                           errorBuilder: (context, e, st) {
                             if (!e.toString().contains("mockAvatar")) {
