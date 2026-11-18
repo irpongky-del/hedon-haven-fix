@@ -80,6 +80,23 @@ jobs:
           echo "Preparing flutter"
           flutter clean
           flutter pub get
+          # cargokit (used by rust packages like rhttp) parses compileSdk with
+          # `android.compileSdkVersion.substring(8) as int`, which assumes the
+          # old "android-NN" string form. On AGP 9.x the value stringifies as
+          # "android-37.0" and "37.0" fails to parse as int. Patch every
+          # cargokit plugin.gradle in the pub cache to a form that is safe for
+          # both the old ("android-NN") and new ("android-NN.M") / int values.
+          echo "Patching cargokit compileSdkVersion parsing"
+          patched=0
+          while IFS= read -r f; do
+            sed -i 's/compileSdkVersion\.substring(8) as int/compileSdkVersion.toString().replace("android-","").substringBefore(".") as int/' "$f"
+            echo "patched: $f"
+            patched=$((patched+1))
+          done < <(grep -rl "compileSdkVersion.substring(8) as int" "$HOME/.pub-cache" 2>/dev/null || true)
+          echo "cargokit files patched: $patched"
+          if [ "$patched" -eq 0 ]; then
+            echo "WARN: no cargokit plugin.gradle matched (rhttp may not be cached or already patched)"
+          fi
           echo "Building split apks"
           flutter build apk --split-per-abi
           echo "Building combined apk"
