@@ -45,18 +45,21 @@ jobs:
           mkdir -p android/keystores android/app
 
           # Release keystore (used by `flutter build apk`)
+          # PKCS12 keystores (keytool's default) only support a single shared
+          # password for store and key: -keypass is ignored. Use the same
+          # password for both so AGP can read the private key back.
           keytool -genkeypair -v \
             -keystore android/keystores/release.keystore \
+            -storetype PKCS12 \
             -alias hedon_haven \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "hedon-ci-store-pw" \
-            -keypass  "hedon-ci-key-pw" \
             -dname "CN=HedonHaven, OU=CI, O=HedonHaven, L=Jakarta, ST=DKI, C=ID"
           cat > android/keystores/release.properties <<'EOF'
           storeFile=release.keystore
           storePassword=hedon-ci-store-pw
           keyAlias=hedon_haven
-          keyPassword=hedon-ci-key-pw
+          keyPassword=hedon-ci-store-pw
           EOF
           # Copy to the location the release signing config actually reads
           cp android/keystores/release.keystore android/app/release.keystore
@@ -64,16 +67,16 @@ jobs:
           # Debug keystore (satisfies the debug signing config at configure time)
           keytool -genkeypair -v \
             -keystore android/keystores/debug.keystore \
+            -storetype PKCS12 \
             -alias hedon_haven \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "hedon-ci-store-pw" \
-            -keypass  "hedon-ci-key-pw" \
             -dname "CN=HedonHavenDebug, OU=CI, O=HedonHaven, L=Jakarta, ST=DKI, C=ID"
           cat > android/keystores/debug.properties <<'EOF'
           storeFile=debug.keystore
           storePassword=hedon-ci-store-pw
           keyAlias=hedon_haven
-          keyPassword=hedon-ci-key-pw
+          keyPassword=hedon-ci-store-pw
           EOF
           cp android/keystores/debug.keystore android/app/debug.keystore
 
