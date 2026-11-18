@@ -87,9 +87,12 @@ jobs:
           # cargokit plugin.gradle in the pub cache to a form that is safe for
           # both the old ("android-NN") and new ("android-NN.M") / int values.
           echo "Patching cargokit compileSdkVersion parsing"
+          # Use only JDK methods (toString/replace/split/parseInt) - Groovy GDK
+          # extension methods like substringBefore are not available in this
+          # plugin context. split("[.]") treats the dot as a literal char class.
           patched=0
           while IFS= read -r f; do
-            sed -i 's/compileSdkVersion\.substring(8) as int/compileSdkVersion.toString().replace("android-","").substringBefore(".") as int/' "$f"
+            sed -i 's/compileSdkVersion\.substring(8) as int/Integer.parseInt(compileSdkVersion.toString().replace("android-","").split("[.]")[0])/' "$f"
             echo "patched: $f"
             patched=$((patched+1))
           done < <(grep -rl "compileSdkVersion.substring(8) as int" "$HOME/.pub-cache" 2>/dev/null || true)
