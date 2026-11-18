@@ -42,7 +42,7 @@ jobs:
       - name: Generate signing keystores
         run: |
           set -euo pipefail
-          mkdir -p android/keystores
+          mkdir -p android/keystores android/app
 
           # Release keystore (used by `flutter build apk`)
           keytool -genkeypair -v \
@@ -58,6 +58,8 @@ jobs:
           keyAlias=hedon_haven
           keyPassword=hedon-ci-key-pw
           EOF
+          # Copy to the location the release signing config actually reads
+          cp android/keystores/release.keystore android/app/release.keystore
 
           # Debug keystore (satisfies the debug signing config at configure time)
           keytool -genkeypair -v \
@@ -73,6 +75,7 @@ jobs:
           keyAlias=hedon_haven
           keyPassword=hedon-ci-key-pw
           EOF
+          cp android/keystores/debug.keystore android/app/debug.keystore
 
       - name: Building android releases
         run: |
