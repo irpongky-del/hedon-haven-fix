@@ -98,8 +98,9 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
       videoSuggestions = loadingHandler.getVideoSuggestions(
           videoMetadata.plugin!, videoMetadata.iD, videoMetadata.rawHtml, null);
       // Pre-load images so they are immediately available when the skeletonizer stops
-      if (videoMetadata.authorAvatar != null) {
-        await precacheImage(NetworkImage(videoMetadata.authorAvatar), context);
+      final avatarUrl = videoMetadata.authorAvatar;
+      if (avatarUrl != null) {
+        await precacheImage(NetworkImage(avatarUrl), context);
       }
       setState(() {
         isLoadingMetadata = false;
