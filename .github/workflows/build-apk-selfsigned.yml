@@ -1,0 +1,102 @@
+# Self-contained APK build.
+#
+# Unlike build-release.yml, this does NOT depend on the private
+# Hedon-Haven/keystores repo or a READ_ACCESS secret. It generates a
+# throwaway keystore in the runner, signs the release APK with it, and
+# uploads the APKs as a workflow artifact.
+#
+# The generated signing key is ephemeral (lives only for the run), so the
+# resulting APK is fine for sideloading / testing but will NOT match the
+# key used to install any previously-updated copy of the app on a device.
+name: Build APK (self-contained)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Preparing environment
+        run: |
+          mkdir -p ./release
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'oracle'
+          java-version: '21'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+
+      - name: Disable flutter/dart analytics
+        run: |
+          dart --disable-analytics
+          flutter config --disable-analytics
+
+      - name: Generate signing keystores
+        run: |
+          set -euo pipefail
+          mkdir -p android/keystores
+
+          # Release keystore (used by `flutter build apk`)
+          keytool -genkeypair -v \
+            -keystore android/keystores/release.keystore \
+            -alias hedon_haven \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "hedon-ci-store-pw" \
+            -keypass  "hedon-ci-key-pw" \
+            -dname "CN=HedonHaven, OU=CI, O=HedonHaven, L=Jakarta, ST=DKI, C=ID"
+          cat > android/keystores/release.properties <<'EOF'
+          storeFile=release.keystore
+          storePassword=hedon-ci-store-pw
+          keyAlias=hedon_haven
+          keyPassword=hedon-ci-key-pw
+          EOF
+
+          # Debug keystore (satisfies the debug signing config at configure time)
+          keytool -genkeypair -v \
+            -keystore android/keystores/debug.keystore \
+            -alias hedon_haven \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "hedon-ci-store-pw" \
+            -keypass  "hedon-ci-key-pw" \
+            -dname "CN=HedonHavenDebug, OU=CI, O=HedonHaven, L=Jakarta, ST=DKI, C=ID"
+          cat > android/keystores/debug.properties <<'EOF'
+          storeFile=debug.keystore
+          storePassword=hedon-ci-store-pw
+          keyAlias=hedon_haven
+          keyPassword=hedon-ci-key-pw
+          EOF
+
+      - name: Building android releases
+        run: |
+          set -euo pipefail
+          echo "Preparing flutter"
+          flutter clean
+          flutter pub get
+          echo "Building split apks"
+          flutter build apk --split-per-abi
+          echo "Building combined apk"
+          flutter build apk
+          echo "Copying apks to release dir"
+          for abi in "armeabi-v7a:android-arm32" "arm64-v8a:android-arm64" "x86_64:android-x86_64"; do
+            src="${abi%%:*}"; dst="${abi##*:}"
+            f="./build/app/outputs/flutter-apk/app-${src}-release.apk"
+            [ -f "$f" ] && mv "$f" "./release/${dst}.apk" || echo "WARN: $f not found"
+          done
+          mv ./build/app/outputs/flutter-apk/app-release.apk ./release/android-all.apk
+          echo "Artifacts:"
+          ls -lh ./release
+
+      - name: Uploading android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-artifacts
+          path: ./release/*.apk
+          if-no-files-found: error
