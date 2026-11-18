@@ -89,16 +89,16 @@ jobs:
           echo "Patching cargokit compileSdkVersion parsing"
           # cargokit assumes the old "android-NN" string form and does
           # `substring(8) as int`. On AGP 9.x the value stringifies as
-          # "android-37.0", so substring(8) = "37.0" and `as int` throws
-          # NumberFormatException. We keep the proven-working `as int` (it is
-          # what actually threw the original error) but make the string clean:
-          # substring(8) = "37.0" -> split(".")[0] = "37" -> as int = 37.
-          # No Groovy-GDK extension methods (substringBefore) and no bare class
-          # references (Integer), which both fail in cargokit's afterEvaluate
-          # closure where the delegate is the `android` extension.
+          # "android-37.0" (major.minor), so substring(8) = "37.0" and `as int`
+          # throws NumberFormatException. Empirically established in this
+          # closure context: only plain java.lang.String methods and `as int`
+          # work - Groovy-GDK extensions (substringBefore) and bare class
+          # references (Integer) both fail delegate resolution. So take the
+          # two API-level digits directly: substring(8, 10) = "37" -> 37.
+          # Valid for current two-digit SDK levels (37).
           patched=0
           while IFS= read -r f; do
-            sed -i 's/compileSdkVersion\.substring(8) as int/compileSdkVersion.substring(8).split(".")[0] as int/' "$f"
+            sed -i 's/compileSdkVersion\.substring(8) as int/compileSdkVersion.substring(8, 10) as int/' "$f"
             echo "patched: $f"
             patched=$((patched+1))
           done < <(grep -rl "compileSdkVersion.substring(8) as int" "$HOME/.pub-cache" 2>/dev/null || true)
