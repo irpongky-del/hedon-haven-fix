@@ -318,6 +318,11 @@ Future<void> addToWatchHistory(UniversalVideoPreview result) async {
   newEntryData.remove("viewsTotal");
   newEntryData.remove("ratingsPositivePercent");
   newEntryData.remove("scrapeFailException");
+  // unavailableFields is a List<String> of provider field names that could
+  // not be scraped. It is metadata for the scraper, not a database column.
+  // Leaving it in the map makes sqflite_common_ffi reject the insert with
+  // "Invalid sql argument type 'List<String>'".
+  newEntryData.remove("unavailableFields");
 
   // update values
   newEntryData["thumbnailBinary"] = await result.plugin?.downloadThumbnail(
@@ -362,6 +367,11 @@ Future<void> addToFavorites(UniversalVideoPreview result) async {
   newEntryData.remove("ratingsPositivePercent");
   newEntryData.remove("scrapeFailException");
   newEntryData.remove("lastWatched");
+  // unavailableFields is a List<String> of provider field names that could
+  // not be scraped. It is metadata for the scraper, not a database column.
+  // Leaving it in the map makes sqflite_common_ffi reject the insert with
+  // "Invalid sql argument type 'List<String>'".
+  newEntryData.remove("unavailableFields");
 
   // update values
   newEntryData["thumbnailBinary"] = await result.plugin?.downloadThumbnail(
